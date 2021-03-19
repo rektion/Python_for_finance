@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import copy
 import random
 import csv
+from multiprocessing import Pool
 from properties import n_children, epsilon, base_capital, first_price, init_arr, coin_name
 
 # Dans cette dernière partie, nous allons créer un "jeu" qui permet d'acheter ou de vendre
@@ -71,6 +72,16 @@ def calculate_next_gen(historys):
     next_gen = next_gen[-50:] # Seul les 50 meilleurs sont ajoutés à la prochaine génération
     return next_gen
 
+def init_parent(historys):
+    history = [init_arr]
+    while True:
+        for elem in raw:
+            step_history(random.uniform(-1, 1), elem, history)
+        if history[len(history)-1][2] > 18000: # On m'appelle la sélection naturelle
+            print("1 parent en plus")
+            return history
+        del history
+        history = [init_arr]
 
 # Permet de générer la génération initiale aléatoirement
 # Ici la séléction naturelle est de 6000
@@ -78,17 +89,11 @@ def calculate_next_gen(historys):
 # La valeur à 4000 et cela prend quelques minutes
 
 def init_parents():
-    historys = []
-    history = [init_arr]
-    while len(historys) < 50: # Création des 50 parents
-        for elem in raw:
-            step_history(random.uniform(-1, 1), elem, history)
-        if history[len(history)-1][2] > 18000: # On m'appelle la sélection naturelle
-            historys.append(copy.copy(history))
-            print(len(historys))
-        del history
-        history = [init_arr]
+    historys = [0]*50
+    with Pool(8) as p:
+        historys = p.map(init_parent, historys)
     return historys
+    
 
 
 # Gènère N générations à partir de rien
@@ -108,4 +113,5 @@ def make_n_generation(n):
                 writer.writerow([next_gen[j][k][0], next_gen[j][k][1], next_gen[j][k][2], next_gen[j][k][3], next_gen[j][k][4]])
 
 
-make_n_generation(6)
+if __name__ == '__main__':
+    make_n_generation(6)

@@ -7,7 +7,6 @@
 
 import tensorflow.keras.layers as lyrs
 import tensorflow.keras.models as mod
-import sklearn.preprocessing as prepro
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
