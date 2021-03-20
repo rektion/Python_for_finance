@@ -113,52 +113,64 @@ train_target = np.array(train_target)
 test = np.array(test)
 test_target = np.array(test_target)
 
-model = mod.Sequential()
-model.add(lyrs.Dense(4000, input_shape = (20, 30)))
-model.add(lyrs.Activation('tanh'))
-model.add(lyrs.Dropout(0.5))
-model.add(lyrs.Dense(2000))
-model.add(lyrs.Activation('relu'))
-model.add(lyrs.Dropout(0.5))
-model.add(lyrs.Dense(1000))
-model.add(lyrs.Activation('relu'))
-model.add(lyrs.Dropout(0.5))
-model.add(lyrs.Dense(500))
-model.add(lyrs.Activation('relu'))
-model.add(lyrs.Dense(250))
-model.add(lyrs.Activation('relu'))
-model.add(lyrs.Dense(1))
-model.add(lyrs.Activation('linear'))
-model.compile(optimizer="adam", loss='mse')
-
-history = model.fit(train, 
+files = [f for f in listdir("models\\" + coin_name)]
+if len(files) == 0:
+    model = mod.Sequential()
+    model.add(lyrs.Dense(3000, input_shape = (20, 30)))
+    model.add(lyrs.Activation('tanh'))
+    model.add(lyrs.Dropout(0.25))
+    model.add(lyrs.Dense(1500))
+    model.add(lyrs.Activation('relu'))
+    model.add(lyrs.Dense(750))
+    model.add(lyrs.Activation('relu'))
+    model.add(lyrs.Dense(375))
+    model.add(lyrs.Activation('relu'))
+    model.add(lyrs.Dense(185))
+    model.add(lyrs.Activation('relu'))
+    model.add(lyrs.Dense(1))
+    model.add(lyrs.Activation('linear'))
+    model.compile(optimizer="adam", loss='mse')
+    model.fit(train, 
           train_target, 
-          epochs=100,
+          epochs=120,
           batch_size = len(train), 
           verbose=1, 
           validation_data=(test, test_target))
+    model.save("models\\" + coin_name)
+else:
+    model = mod.load_model("models\\" + coin_name)
 
-predicted = model.predict(test)
+tot = []
+for element in train:
+    tot.append(element)
+for element in test:
+    tot.append(element)
+tot = np.array(tot)
+
+predicted = model.predict(tot)
+
 
 hist = [init_arr]
 for i in range(len(predicted)):
     previous = hist[len(hist)-1]
-    if predicted[i][0] == 0:
+    prediction = predicted[i][0]
+    if prediction == 0:
         hist.append([previous[0], previous[1], previous[2], 0, prices[i+1] ]) # raw[1] = prices
     else:
-        if predicted[i][0] > 0:  # we buy
-            amount_in_order = previous[0]*predicted[i][0]
+        if prediction > 0:  # we buy
+            amount_in_order = previous[0]*prediction
             balance = previous[0] - amount_in_order
             n_barrels = previous[1] + ((amount_in_order * 0.999)/prices[i+1]) # 0.999 is binance fee
         else: # we sell
-            amount_in_order = previous[1]*(-predicted[i][0])
+            amount_in_order = previous[1]*(-prediction)
             balance = previous[0] + amount_in_order*0.999*prices[i+1] # 0.999 is binance fee
             n_barrels = previous[1] - amount_in_order
         estimated_total_balance = balance + n_barrels*prices[i+1]
-        hist.append([balance, n_barrels, estimated_total_balance, predicted[i][0], prices[i+1] ])
+        hist.append([balance, n_barrels, estimated_total_balance, prediction, prices[i+1] ])
 
 elem = hist[len(hist)-1]
 print(elem[0]," | ", elem[1]," | ", elem[2]," | ", elem[3]," | ", elem[4])
+# The random trading for bitcoin is ~1800
 
 import matplotlib.pyplot as plt
 capital = []
